@@ -12,5 +12,33 @@ layout (location = 0 ) in VS_OUT
 
 void main()
 {
-  color = textureLod(colorTex, surf.texCoord, 0);
+  vec4 colors[9] = vec4[9](
+    textureLodOffset(colorTex, surf.texCoord, 0, ivec2(-1, -1)),
+    textureLodOffset(colorTex, surf.texCoord, 0, ivec2(-1,  0)),
+    textureLodOffset(colorTex, surf.texCoord, 0, ivec2(-1,  1)),
+    textureLodOffset(colorTex, surf.texCoord, 0, ivec2( 0, -1)),
+    textureLodOffset(colorTex, surf.texCoord, 0, ivec2( 0,  0)),
+    textureLodOffset(colorTex, surf.texCoord, 0, ivec2( 0,  1)),
+    textureLodOffset(colorTex, surf.texCoord, 0, ivec2( 1, -1)),
+    textureLodOffset(colorTex, surf.texCoord, 0, ivec2( 1,  0)),
+    textureLodOffset(colorTex, surf.texCoord, 0, ivec2( 1,  1))
+  );
+
+  for (int channel = 0; channel < 3; ++channel)
+  {
+    for (int i = 0; i < 8; ++i)
+    {  
+      for (int j = i + 1; j < 9; ++j)
+      {
+        if (colors[j - 1][channel] < colors[j][channel])
+        {
+          float tmp = colors[j - 1][channel];
+          colors[j - 1][channel] = colors[j][channel];
+          colors[j][channel] = tmp;
+        }
+      }
+    }
+  }
+
+  color = colors[4];
 }
