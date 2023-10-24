@@ -79,7 +79,8 @@ private:
   VkPipeline m_pipeline;
   VkPipelineLayout m_layout;
 
-  VkBuffer m_A, m_B, m_sum;
+  std::vector<float> m_values;
+  VkBuffer m_rand, m_res;
  
   void CreateInstance();
   void CreateDevice(uint32_t a_deviceId);

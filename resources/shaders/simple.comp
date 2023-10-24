@@ -6,25 +6,30 @@ layout( push_constant ) uniform params {
   uint len;
 } PushConstant;
 
-layout(std430, binding = 0) buffer a 
+layout(std430, binding = 0) buffer Rand
 {
-    float A[];
+    float rand[];
 };
 
-layout(std430, binding = 1) buffer b
+layout(std430, binding = 1) buffer Res
 {
-    float B[];
-};
-
-layout(std430, binding = 2) buffer Sum
-{
-    float sum[];
+    float res[];
 };
 
 void main() 
 {
     uint idx = gl_GlobalInvocationID.x;
     if (idx < PushConstant.len) {
-        sum[idx] = A[idx] + B[idx];
+        uint start = max(0, idx - 3);
+        uint end = min(PushConstant.len, idx + 4);
+        float aver = 0.0;
+        for (uint i = start; i < end; ++i)
+        {
+	        aver += rand[i];
+        }
+
+        aver /= 7.0;
+
+        res[idx] = rand[idx] - aver;
     }
 }
