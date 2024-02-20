@@ -36,7 +36,7 @@ void SimpleShadowmapRender::UpdateView()
     mProjFix = OpenglToVulkanProjectionMatrixFix(); 
   
   mLookAt       = LiteMath::lookAt(m_light.cam.pos, m_light.cam.pos + m_light.cam.forward()*10.0f, m_light.cam.up);
-  m_lightMatrix = mProjFix*mProj*mLookAt;
+  m_lightMatrix = mProj*mLookAt;
 }
 
 void SimpleShadowmapRender::UpdateUniformBuffer(float a_time)
@@ -44,6 +44,10 @@ void SimpleShadowmapRender::UpdateUniformBuffer(float a_time)
   m_uniforms.lightMatrix = m_lightMatrix;
   m_uniforms.lightPos    = m_light.cam.pos; //LiteMath::float3(sinf(a_time), 1.0f, cosf(a_time));
   m_uniforms.time        = a_time;
+
+  m_uniforms.lightDir = {m_light.lightDir[0], m_light.lightDir[1], m_light.lightDir[2]};
+  m_uniforms.innerAngle = DEG_TO_RAD * m_light.innerAngle;
+  m_uniforms.outerAngle = DEG_TO_RAD * m_light.outerAngle;
 
   memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));
 }

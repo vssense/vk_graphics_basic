@@ -126,6 +126,9 @@ private:
     Camera cam;              ///!< user control for light to later get light worldViewProj matrix
     bool   usePerspectiveM;  ///!< use perspective matrix if true and ortographics otherwise
   
+    float lightDir[3]{0.0f, -0.2f, -0.4f};
+    float innerAngle = 20.f;
+    float outerAngle = 45.f;
   } m_light;
  
   void DrawFrameSimple(bool draw_gui);
