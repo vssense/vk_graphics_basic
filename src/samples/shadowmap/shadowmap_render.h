@@ -124,6 +124,9 @@ private:
   
   } m_light;
  
+  float m_out_angle = 45.0f;
+  float m_in_angle = 20.0f;
+
   void DrawFrameSimple(bool draw_gui);
 
   void BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkImage a_targetImage, VkImageView a_targetImageView);
