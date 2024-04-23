@@ -23,6 +23,14 @@ void SimpleShadowmapRender::AllocateResources()
     .imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment
   });
 
+  mainView = m_context->createImage(etna::Image::CreateInfo
+  {
+    .extent     = vk::Extent3D{ m_width, m_height, 1 },
+    .name       = "main_view",
+    .format     = vk::Format::eR16G16B16A16Sfloat,
+    .imageUsage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled
+  });
+
   shadowMap = m_context->createImage(etna::Image::CreateInfo
   {
     .extent = vk::Extent3D{2048, 2048, 1},
@@ -91,6 +99,9 @@ void SimpleShadowmapRender::loadShaders()
   etna::create_program("simple_material",
     {VK_GRAPHICS_BASIC_ROOT"/resources/shaders/simple_shadow.frag.spv", VK_GRAPHICS_BASIC_ROOT"/resources/shaders/simple.vert.spv"});
   etna::create_program("simple_shadow", {VK_GRAPHICS_BASIC_ROOT"/resources/shaders/simple.vert.spv"});
+
+  etna::create_program("tonemap", { VK_GRAPHICS_BASIC_ROOT"/resources/shaders/tonemap.vert.spv",
+                                    VK_GRAPHICS_BASIC_ROOT"/resources/shaders/tonemap.frag.spv" });
 }
 
 void SimpleShadowmapRender::SetupSimplePipeline()
@@ -109,7 +120,7 @@ void SimpleShadowmapRender::SetupSimplePipeline()
       .vertexShaderInput = sceneVertexInputDesc,
       .fragmentShaderOutput =
         {
-          .colorAttachmentFormats = {static_cast<vk::Format>(m_swapchain.GetFormat())},
+          .colorAttachmentFormats = {vk::Format::eR16G16B16A16Sfloat},
           .depthAttachmentFormat = vk::Format::eD32Sfloat
         }
     });
@@ -119,6 +130,15 @@ void SimpleShadowmapRender::SetupSimplePipeline()
       .fragmentShaderOutput =
         {
           .depthAttachmentFormat = vk::Format::eD16Unorm
+        }
+    });
+
+  m_tonemapPipeline = pipelineManager.createGraphicsPipeline("tonemap",
+    {
+      .vertexShaderInput = {},
+      .fragmentShaderOutput =
+        {
+          .colorAttachmentFormats = {static_cast<vk::Format>(m_swapchain.GetFormat())}
         }
     });
 }
@@ -163,7 +183,8 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
   //// draw scene to shadowmap
   //
   {
-    etna::RenderTargetState renderTargets(a_cmdBuff, {0, 0, 2048, 2048}, {}, {.image = shadowMap.get(), .view = shadowMap.getView({})});
+    etna::RenderTargetState renderTargets(a_cmdBuff, {0, 0, 2048, 2048}, {},
+        {.image = shadowMap.get(), .view = shadowMap.getView({})});
 
     vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_shadowPipeline.getVkPipeline());
     DrawSceneCmd(a_cmdBuff, m_lightMatrix, m_shadowPipeline.getVkPipelineLayout());
@@ -183,7 +204,7 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
     VkDescriptorSet vkSet = set.getVkSet();
 
     etna::RenderTargetState renderTargets(a_cmdBuff, {0, 0, m_width, m_height},
-      {{.image = a_targetImage, .view = a_targetImageView}},
+      {{.image = mainView.get(), .view = mainView.getView({})}},
       {.image = mainViewDepth.get(), .view = mainViewDepth.getView({})});
 
     vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_basicForwardPipeline.getVkPipeline());
@@ -191,6 +212,25 @@ void SimpleShadowmapRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, 
       m_basicForwardPipeline.getVkPipelineLayout(), 0, 1, &vkSet, 0, VK_NULL_HANDLE);
 
     DrawSceneCmd(a_cmdBuff, m_worldViewProj, m_basicForwardPipeline.getVkPipelineLayout());
+  }
+
+  {
+    auto tonemap = etna::get_shader_program("tonemap");
+
+    auto set = etna::create_descriptor_set(tonemap.getDescriptorLayoutId(0), a_cmdBuff,
+    {
+        etna::Binding{ 0, mainView.genBinding(defaultSampler.get(), vk::ImageLayout::eShaderReadOnlyOptimal) },
+    });
+
+    VkDescriptorSet vkSet = set.getVkSet();
+
+    etna::RenderTargetState renderTargets(a_cmdBuff, { 0, 0, m_width, m_height }, { { .image = a_targetImage, .view = a_targetImageView } }, {});
+
+    vkCmdBindPipeline(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_tonemapPipeline.getVkPipeline());
+    vkCmdBindDescriptorSets(a_cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, m_tonemapPipeline.getVkPipelineLayout(), 0, 1, &vkSet, 0, VK_NULL_HANDLE);
+
+    vkCmdPushConstants(a_cmdBuff, m_tonemapPipeline.getVkPipelineLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(m_tonemapping), &m_tonemapping);
+    vkCmdDraw(a_cmdBuff, 3, 1, 0, 0);
   }
 
   if(m_input.drawFSQuad)

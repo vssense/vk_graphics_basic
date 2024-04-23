@@ -45,6 +45,7 @@ public:
 
 private:
   etna::GlobalContext* m_context;
+  etna::Image mainView;
   etna::Image mainViewDepth;
   etna::Image shadowMap;
   etna::Sampler defaultSampler;
@@ -77,6 +78,7 @@ private:
 
   etna::GraphicsPipeline m_basicForwardPipeline {};
   etna::GraphicsPipeline m_shadowPipeline {};
+  etna::GraphicsPipeline m_tonemapPipeline {};
   
   VkSurfaceKHR m_surface = VK_NULL_HANDLE;
   VulkanSwapChain m_swapchain;
@@ -123,6 +125,13 @@ private:
     bool   usePerspectiveM;  ///!< use perspective matrix if true and ortographics otherwise
   
   } m_light;
+
+  struct
+  {
+    float gamma = 3.0f;
+    float exposure = 0.5f;
+    bool use_tonemapping = false;
+  } m_tonemapping;
  
   void DrawFrameSimple(bool draw_gui);
 
