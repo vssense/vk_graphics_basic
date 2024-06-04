@@ -130,7 +130,7 @@ private:
   {
     float gamma = 3.0f;
     float exposure = 0.5f;
-    bool use_tonemapping = false;
+    int use_tonemapping = false;
   } m_tonemapping;
  
   void DrawFrameSimple(bool draw_gui);

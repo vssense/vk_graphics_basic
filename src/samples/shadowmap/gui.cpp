@@ -14,7 +14,7 @@ void SimpleShadowmapRender::SetupGUIElements()
     ImGui::ColorEdit3("Meshes base color", m_uniforms.baseColor.M, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoInputs);
     ImGui::SliderFloat3("Light source position", m_uniforms.lightPos.M, -10.f, 10.f);
 
-    ImGui::Checkbox("Use tonemapping", &m_tonemapping.use_tonemapping);
+    ImGui::Checkbox("Use tonemapping", reinterpret_cast<bool*>(&m_tonemapping.use_tonemapping));
     ImGui::SliderFloat("Gamma", &m_tonemapping.gamma, 0.1f, 10.0f);
     ImGui::SliderFloat("Exposure", &m_tonemapping.exposure, 0.1f, 100.0f);
 
